@@ -15,6 +15,7 @@ export default class SYTextContainer extends KHContainer {
     emitter: KHEventHandler<SYTextContainerEventMap> = new KHEventHandler();
     private textHeight = 0;
     private cachedText: string = '';
+    private activeFade: Phaser.GameObjects.DynamicBitmapText;
     
     constructor(scene: Phaser.Scene, private readonly rows: number, private readonly cols: number) {
         super(scene, 0, 0, game.width, game.height);
@@ -45,8 +46,15 @@ export default class SYTextContainer extends KHContainer {
         }
     }
 
-    startFade(duration: number) {
+    startFade(duration: number, fadeCallback: (empty: boolean, index: number) => void, fadeIndex: number = 0) {
+        this.hideLastCharacter(duration, (empty: boolean) => {
+            fadeCallback?.(empty, fadeIndex);
+        });
+    }
 
+    cancelFade() {
+        this.activeFade?.setDisplayCallback(undefined);
+        this.activeFade = undefined;
     }
 
     modifiedIndexForRow(row: number, index: number) {
@@ -58,12 +66,13 @@ export default class SYTextContainer extends KHContainer {
         this.emitter.emitEvent('interactionAllowed', { allowed: false });
         this.doLossInternal();
     }
-    
-    private doLossInternal() {
+
+    private hideLastCharacter(duration: number, callback: (empty: boolean) => void) {
         if (this.cachedText.length === 0) {
-            this.emitter.emitEvent('interactionAllowed', { allowed: true });
+            callback(true);
             return;
         }
+        
         const idx = this.cachedText.length - 1;
         if (idx >= 0) {
             const rowNum = Math.floor(idx / this.cols);
@@ -71,12 +80,11 @@ export default class SYTextContainer extends KHContainer {
             const currRow = this.texts[rowNum];
             if (!currRow) {
                 console.warn('row num out of bounds', rowNum);
-                this.setText('');
-                this.doLossInternal();
+                callback(true);
                 return;
             }
             const startTime = this.scene.time.now;
-            const endTime = startTime + QUICK_ANIM_FADE;
+            const endTime = startTime + duration;
             currRow.setDisplayCallback((data: Phaser.Types.GameObjects.BitmapText.DisplayCallbackConfig) => {
                 const percent = percentClamped(startTime, endTime, this.scene.time.now);
                 const color = data.index === indexInRow ? lerpColor(0, 0xFFFFFF, percent) : 0x0;
@@ -86,12 +94,22 @@ export default class SYTextContainer extends KHContainer {
                 data.tint.topRight = color;
                 if (data.index === indexInRow && percent >= 1) {
                     this.setText(this.cachedText.slice(0, -1));
-                        currRow.setDisplayCallback(undefined);
-                        this.doLossInternal();
+                    currRow.setDisplayCallback(undefined);
+                    callback(false);
                     return data;
                 }
                 return data;
             });
         }
+    }
+    
+    private doLossInternal() {
+        this.hideLastCharacter(QUICK_ANIM_FADE, () => {
+            if (this.cachedText.length === 0) {
+                this.emitter.emitEvent('interactionAllowed', { allowed: true });
+            } else {
+                this.doLossInternal();
+            }
+        });
     }
 }

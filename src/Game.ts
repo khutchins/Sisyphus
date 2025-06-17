@@ -32,10 +32,7 @@ export enum ATAchievements {
 export class ATGame extends KHGame {
     width: number;
     height: number;
-    score: KHPersistentReference<number>;
-    scoreCalm: KHPersistentReference<number>;
-    mute: KHPersistentReference<boolean>;
-    inCalmMode: boolean;
+    seed: KHPersistentReference<number>;
     
     achievements: KHAchievements;
 
@@ -45,12 +42,13 @@ export class ATGame extends KHGame {
         this.height = Number(this.config.height);
 
         this.achievements = new KHAchievements();
-        this.score = new KHPersistentReference<number>(0, true);
-        this.scoreCalm = new KHPersistentReference<number>(0, true);
-        this.mute = new KHPersistentReference<boolean>(false, true);
+        this.seed = new KHPersistentReference(-1, true);
 
         this.storageManager.registerAll({
-            [KHAchievements.MENAGERIE_KEY]: this.achievements
+            [KHAchievements.MENAGERIE_KEY]: this.achievements,
+            'kh.sisyphus': { 
+                'seed': this.seed,
+            }
         });
     }
 }

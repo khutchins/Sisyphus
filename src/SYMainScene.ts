@@ -58,6 +58,8 @@ const WIDTH = 50;
 // const HEIGHT = 18;
 const HEIGHT = 18;
 
+const FADE_TIMES = [5000, 4000, 3000, 2000, 1000, 500, 250, 125, 64, 32, 16];
+
 export class SYMainScene extends Phaser.Scene {
     bg: KHContainer;
     mute: Phaser.GameObjects.Sprite;
@@ -84,7 +86,13 @@ export class SYMainScene extends Phaser.Scene {
     }
 
     create() {
-        const seed = getRandomInt(0, 1_000_000_000);
+        let seed = game.seed.get();
+        console.log('seed is ', seed);
+        if (seed === undefined || seed < 0) {
+            console.log('creating new seed');
+            game.seed.set(getRandomInt(0, 1_000_000_000));
+            seed = game.seed.get();
+        }
         const fakeString = getFullText(getRandomInt(0, 5_000_000), HEIGHT * WIDTH - 1);
         this.fullString = getFullText(seed, HEIGHT * WIDTH);
         console.log(this.fullString);
@@ -105,24 +113,25 @@ export class SYMainScene extends Phaser.Scene {
         textContainer.setText(fakeString);
         textContainer.doLoss();
 
+        const fadeCallback = (empty: boolean, idx: number) => {
+            if (empty) return;
+            textContainer.startFade(FADE_TIMES[Math.min(FADE_TIMES.length - 1, idx)], fadeCallback, idx + 1);
+        }
+
         this.input.keyboard.on('keydown', (event: { key: string; }) => {
             if (!this.allowInteraction) return;
+            textContainer.cancelFade();
             const char = event.key.toUpperCase();
             if (this.validChar(char) || char === 'O') { 
                 if (this.matchesNext(char)) {
                     this.currString += char;
                     textContainer.setText(this.currString);
+                    textContainer.startFade(FADE_TIMES[0], fadeCallback, 0);
                 } else {
                     this.currString = '';
                     textContainer.doLoss();
                 }
             }
         });
-    }
-
-    setMute(mute: boolean) {
-        game.mute.set(mute);
-        game.sound.mute = game.mute.get();
-        this.mute.setTexture(mute ? 'volume_off' : 'volume_on');
     }
 }
