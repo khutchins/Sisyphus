@@ -25,11 +25,11 @@ const config = {
     scene: [ SYPreloadScene, SYMainScene ]
 };
 
-export enum ATAchievements {
+export enum SYAchievements {
     AreYouHappy = "sisyphus_happy",
 }
 
-export class ATGame extends KHGame {
+export class SYGame extends KHGame {
     width: number;
     height: number;
     seed: KHPersistentReference<number>;
@@ -53,4 +53,4 @@ export class ATGame extends KHGame {
     }
 }
 
-export const game = new ATGame(config, { scaleMode: KHScaleMode.NoScale, alwaysMaxScale: true });
+export const game = new SYGame(config, { scaleMode: KHScaleMode.NoScale, alwaysMaxScale: true });
