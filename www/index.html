@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+<head>
+        <title>SISYPHUS.</title>
+        <style>
+body {
+    padding: 0;
+    margin: 0;
+    background-color: #ddd;
+    overflow: hidden;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.game {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+}
+@font-face {
+    font-family: "SourceSerif";
+    font-weight: 500;
+    src: url('assets/SourceSerif4-VariableFont_opsz,wght.ttf');
+}
+::selection {
+        background: black;
+        color: white;
+}
+::placeholder {
+        color: black;
+}
+        </style>
+        <script src="./phaser.min.js"></script>
+        <script src="./game.js"></script>
+</head>
+<body>
+<div id="phaser-game" class="game"></div>
+</body>
+</html>
