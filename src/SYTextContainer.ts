@@ -8,7 +8,7 @@ interface SYTextContainerEventMap extends KHEventMap {
     'interactionAllowed': { allowed: boolean };
 }
 
-const QUICK_ANIM_FADE = 16 * 1;
+const QUICK_ANIM_FADE = 16 / 3;
 
 export default class SYTextContainer extends KHContainer {
     texts: Phaser.GameObjects.DynamicBitmapText[];
@@ -49,7 +49,7 @@ export default class SYTextContainer extends KHContainer {
     startFade(duration: number, fadeCallback: (empty: boolean, index: number) => void, fadeIndex: number = 0) {
         this.hideLastCharacter(duration, (empty: boolean) => {
             fadeCallback?.(empty, fadeIndex);
-        });
+        }, 0);
     }
 
     cancelFade() {
@@ -67,9 +67,9 @@ export default class SYTextContainer extends KHContainer {
         this.doLossInternal();
     }
 
-    private hideLastCharacter(duration: number, callback: (empty: boolean) => void) {
+    private hideLastCharacter(duration: number, callback: (empty: boolean, overage: number) => void, overage: number) {
         if (this.cachedText.length === 0) {
-            callback(true);
+            callback(true, 0);
             return;
         }
         
@@ -80,7 +80,12 @@ export default class SYTextContainer extends KHContainer {
             const currRow = this.texts[rowNum];
             if (!currRow) {
                 console.warn('row num out of bounds', rowNum);
-                callback(true);
+                callback(true, 0);
+                return;
+            }
+            if (duration - overage <= 0) {
+                this.setText(this.cachedText.slice(0, -1));
+                callback(false, overage - duration);
                 return;
             }
             const startTime = this.scene.time.now;
@@ -95,7 +100,7 @@ export default class SYTextContainer extends KHContainer {
                 if (data.index === indexInRow && percent >= 1) {
                     this.setText(this.cachedText.slice(0, -1));
                     currRow.setDisplayCallback(undefined);
-                    callback(false);
+                    callback(false, this.scene.time.now - endTime);
                     return data;
                 }
                 return data;
@@ -103,13 +108,13 @@ export default class SYTextContainer extends KHContainer {
         }
     }
     
-    private doLossInternal() {
-        this.hideLastCharacter(QUICK_ANIM_FADE, () => {
+    private doLossInternal(overage: number = 0) {
+        this.hideLastCharacter(QUICK_ANIM_FADE, (empty: boolean, overage: number) => {
             if (this.cachedText.length === 0) {
                 this.emitter.emitEvent('interactionAllowed', { allowed: true });
             } else {
-                this.doLossInternal();
+                this.doLossInternal(overage);
             }
-        });
+        }, overage);
     }
 }
