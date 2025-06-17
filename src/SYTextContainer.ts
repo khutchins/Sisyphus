@@ -5,6 +5,7 @@ import { lerpColor, percentClamped } from "./KH/KHHelperFunctions";
 
 interface SYTextContainerEventMap extends KHEventMap {
     'heightChanged': { height: number };
+    'updateText': { text: string };
     'interactionAllowed': { allowed: boolean };
 }
 
@@ -44,6 +45,7 @@ export default class SYTextContainer extends KHContainer {
             this.textHeight = thisHeight;
             this.emitter.emitEvent('heightChanged', { height: this.textHeight });
         }
+        this.emitter.emitEvent('updateText', { text });
     }
 
     startFade(duration: number, fadeCallback: (empty: boolean, index: number) => void, fadeIndex: number = 0) {
@@ -90,6 +92,7 @@ export default class SYTextContainer extends KHContainer {
             }
             const startTime = this.scene.time.now;
             const endTime = startTime + duration;
+            this.activeFade = currRow;
             currRow.setDisplayCallback((data: Phaser.Types.GameObjects.BitmapText.DisplayCallbackConfig) => {
                 const percent = percentClamped(startTime, endTime, this.scene.time.now);
                 const color = data.index === indexInRow ? lerpColor(0, 0xFFFFFF, percent) : 0x0;

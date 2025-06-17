@@ -68,6 +68,8 @@ export class SYMainScene extends Phaser.Scene {
     private fullString: string = '';
     private currString: string = '';
     private allowInteraction: boolean = true;
+    private textContainer: SYTextContainer;
+    private logo: Phaser.GameObjects.Image;
 
     constructor() {
         super(SYSceneNames.Menu);
@@ -85,53 +87,92 @@ export class SYMainScene extends Phaser.Scene {
         return this.fullString[this.currString.length] === mappedKey;
     }
 
+    makeNewSeed() {
+        game.seed.set(getRandomInt(0, 1_000_000_000));
+        return game.seed.get();
+    }
+
     create() {
         let seed = game.seed.get();
-        console.log('seed is ', seed);
+        console.log('seed is', seed);
         if (seed === undefined || seed < 0) {
             console.log('creating new seed');
-            game.seed.set(getRandomInt(0, 1_000_000_000));
-            seed = game.seed.get();
+            seed = this.makeNewSeed();
         }
         const fakeString = getFullText(getRandomInt(0, 5_000_000), HEIGHT * WIDTH - 1);
         this.fullString = getFullText(seed, HEIGHT * WIDTH);
-        console.log(this.fullString);
+        // console.log(this.fullString);
 
-        const logo = this.add.image(game.width/2, game.height * 0.25, 'logo').setOrigin(0.5, 0.5);
+        this.logo = this.add.image(game.width/2, game.height * 0.25, 'logo').setOrigin(0.5, 0.5);
 
-        const fadeStartHeight = 8;
-        const fadeEndHeight = 11;
-
-        const textContainer = new SYTextContainer(this, HEIGHT, WIDTH);
-        textContainer.emitter.onFor('heightChanged', this, ({height}) => {
-            const percent = 1 - Math.min(1, Math.max(0, (height - fadeStartHeight) / (fadeEndHeight - fadeStartHeight)));
-            logo.setAlpha(percent);
-        });
-        textContainer.emitter.onFor('interactionAllowed', this, ({allowed}) => {
-            this.allowInteraction = allowed;
-        });
-        textContainer.setText(fakeString);
-        textContainer.doLoss();
+        this.setTextContainer(new SYTextContainer(this, HEIGHT, WIDTH), fakeString);
 
         const fadeCallback = (empty: boolean, idx: number) => {
             if (empty) return;
-            textContainer.startFade(FADE_TIMES[Math.min(FADE_TIMES.length - 1, idx)], fadeCallback, idx + 1);
+            this.textContainer.startFade(FADE_TIMES[Math.min(FADE_TIMES.length - 1, idx)], fadeCallback, idx + 1);
         }
-
+        
         this.input.keyboard.on('keydown', (event: { key: string; }) => {
             if (!this.allowInteraction) return;
-            textContainer.cancelFade();
+            this.textContainer.cancelFade();
             const char = event.key.toUpperCase();
             if (this.validChar(char) || char === 'O') { 
                 if (this.matchesNext(char)) {
-                    this.currString += char;
-                    textContainer.setText(this.currString);
-                    textContainer.startFade(FADE_TIMES[0], fadeCallback, 0);
+                    this.textContainer.setText(this.currString + char);
+                    this.textContainer.startFade(FADE_TIMES[0], fadeCallback, 0);
                 } else {
-                    this.currString = '';
-                    textContainer.doLoss();
+                    this.textContainer.doLoss();
                 }
             }
         });
+    }
+
+    private setTextContainer(container: SYTextContainer, startString: string) {
+        const fadeStartHeight = 8;
+        const fadeEndHeight = 11;
+        if (this.textContainer) {
+            this.textContainer.emitter.unregisterAllCallbacksForObject(this);
+        }
+        this.textContainer = container;
+        container.emitter.onFor('heightChanged', this, ({height}) => {
+            const percent = 1 - Math.min(1, Math.max(0, (height - fadeStartHeight) / (fadeEndHeight - fadeStartHeight)));
+            this.logo.setAlpha(percent);
+        });
+        container.emitter.onFor('interactionAllowed', this, ({allowed}) => {
+            this.allowInteraction = allowed;
+        });
+        container.emitter.onFor('updateText', this, ({text}) => {
+            this.currString = text;
+            if (text === this.fullString) {
+                this.animateNewContainer();
+            }
+        });
+        container.setText(startString);
+        container.doLoss();
+    }
+
+    private animateNewContainer() {
+        this.allowInteraction = false;
+        const newContainer = new SYTextContainer(this, HEIGHT, WIDTH);
+        newContainer.y = game.height;
+        const duration = 1000;
+        this.tweens.add({
+            targets:this.textContainer,
+            y: game.height,
+            duration: duration,
+            ease: 'cubic.inout',
+        });
+        this.tweens.add({
+            targets:newContainer,
+            y: 0,
+            duration: duration,
+            ease: 'cubic.inout',
+            callbacks: () => {
+                this.allowInteraction = true;
+                const seed = this.makeNewSeed();
+                this.fullString = getFullText(seed, HEIGHT * WIDTH);
+                this.setTextContainer(newContainer, '');
+            }
+        })
     }
 }
