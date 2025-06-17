@@ -94,6 +94,10 @@ export class SYMainScene extends Phaser.Scene {
         const fadeEndHeight = 11;
 
         const textContainer = new SYTextContainer(this, HEIGHT, WIDTH);
+        textContainer.emitter.onFor('heightChanged', this, ({height}) => {
+            const percent = 1 - Math.min(1, Math.max(0, (height - fadeStartHeight) / (fadeEndHeight - fadeStartHeight)));
+            logo.setAlpha(percent);
+        });
         textContainer.setText(this.fullString);
 
         this.input.keyboard.on('keydown', (event: { key: string; }) => {
@@ -106,9 +110,6 @@ export class SYMainScene extends Phaser.Scene {
                     this.currString = '';
                 }
                 textContainer.setText(this.currString);
-                const height = this.currString.length / WIDTH;
-                const percent = 1 - Math.min(1, Math.max(0, (height - fadeStartHeight) / (fadeEndHeight - fadeStartHeight)));
-                logo.setAlpha(percent);
             }
         });
     }

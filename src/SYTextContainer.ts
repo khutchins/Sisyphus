@@ -1,8 +1,15 @@
 import { game } from "./Game";
 import { KHContainer } from "./KH/KHContainer";
+import { KHEventHandler, KHEventMap } from "./KH/KHEventHandler";
+
+interface SYTextContainerEventMap extends KHEventMap {
+    'heightChanged': { height: number };
+}
 
 export default class SYTextContainer extends KHContainer {
     texts: Phaser.GameObjects.DynamicBitmapText[];
+    emitter: KHEventHandler<SYTextContainerEventMap> = new KHEventHandler();
+    private textHeight = 0;
     
     constructor(scene: Phaser.Scene, private readonly rows: number, private readonly cols: number) {
         super(scene, 0, 0, game.width, game.height);
@@ -13,14 +20,22 @@ export default class SYTextContainer extends KHContainer {
             this.texts.push(text);
             this.add(text);
         }
+        this.textHeight = 0;
     }
 
     setText(text: string) {
         const modText = text + 'o';
+        let thisHeight = 0;
         for (let i = 0; i < this.texts.length; i++) {
-            let sliced = modText.slice(i * this.cols, (i + 1) * this.cols).padEnd(this.cols, ' ');
+            const raw = modText.slice(i * this.cols, (i + 1) * this.cols);
+            if (raw.length > 0) thisHeight = i;
+            let sliced = raw.padEnd(this.cols, ' ');
             if (i % 2 == 1) sliced = [...sliced].reverse().join('');
             this.texts[i].text = sliced;
+        }
+        if (thisHeight !== this.textHeight) {
+            this.textHeight = thisHeight;
+            this.emitter.emitEvent('heightChanged', { height: this.textHeight });
         }
     }
 }

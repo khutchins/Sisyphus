@@ -26,7 +26,7 @@ const config = {
 };
 
 export enum ATAchievements {
-    Win = "attention_win",
+    AreYouHappy = "sisyphus_happy",
 }
 
 export class ATGame extends KHGame {
