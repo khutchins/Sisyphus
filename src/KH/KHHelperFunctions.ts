@@ -145,3 +145,7 @@ export function percent(start: number, end: number, val: number) {
 export function percentClamped(start: number, end: number, val: number) {
     return clamp(0, 1, percent(start, end, val));
 }
+
+export function lerp(start: number, end: number, percent: number) {
+    return start + (end - start) * percent;
+}

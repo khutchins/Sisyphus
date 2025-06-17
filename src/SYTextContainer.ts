@@ -1,7 +1,7 @@
 import { game } from "./Game";
 import { KHContainer } from "./KH/KHContainer";
 import { KHEventHandler, KHEventMap } from "./KH/KHEventHandler";
-import { lerpColor, percentClamped } from "./KH/KHHelperFunctions";
+import { lerp, lerpColor, percent, percentClamped } from "./KH/KHHelperFunctions";
 
 interface SYTextContainerEventMap extends KHEventMap {
     'heightChanged': { height: number };
@@ -9,7 +9,7 @@ interface SYTextContainerEventMap extends KHEventMap {
     'interactionAllowed': { allowed: boolean };
 }
 
-const QUICK_ANIM_FADE = 16 / 3;
+const QUICK_ANIM_FADE = 16 * 2;
 
 export default class SYTextContainer extends KHContainer {
     texts: Phaser.GameObjects.DynamicBitmapText[];
@@ -66,7 +66,7 @@ export default class SYTextContainer extends KHContainer {
 
     doLoss() {
         this.emitter.emitEvent('interactionAllowed', { allowed: false });
-        this.doLossInternal();
+        this.doLossInternal(this.cachedText.length);
     }
 
     private hideLastCharacter(duration: number, callback: (empty: boolean, overage: number) => void, overage: number) {
@@ -111,12 +111,15 @@ export default class SYTextContainer extends KHContainer {
         }
     }
     
-    private doLossInternal(overage: number = 0) {
-        this.hideLastCharacter(QUICK_ANIM_FADE, (empty: boolean, overage: number) => {
+    private doLossInternal(startingLength: number, overage: number = 0) {
+        const percentOfMax = percentClamped(100, 900, startingLength);
+        const maxDuration = lerp(1000, 4500, percentOfMax);
+        const duration = Math.min(QUICK_ANIM_FADE, maxDuration / startingLength);
+        this.hideLastCharacter(duration, (empty: boolean, overage: number) => {
             if (this.cachedText.length === 0) {
                 this.emitter.emitEvent('interactionAllowed', { allowed: true });
             } else {
-                this.doLossInternal(overage);
+                this.doLossInternal(startingLength, overage);
             }
         }, overage);
     }
