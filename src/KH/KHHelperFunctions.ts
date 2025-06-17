@@ -137,3 +137,11 @@ export function ping_pong(min: number, max: number, curr: number) {
 export function clamp(min: number, max: number, num: number) {
     return num < min ? min : (num > max ? max : num);
 }
+
+export function percent(start: number, end: number, val: number) {
+    return (val - start) / (end - start);
+}
+
+export function percentClamped(start: number, end: number, val: number) {
+    return clamp(0, 1, percent(start, end, val));
+}

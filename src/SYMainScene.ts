@@ -53,9 +53,9 @@ const keyMap = {
     'M': '2',
 }
 
-// const WIDTH = 50;
+const WIDTH = 50;
+// const WIDTH = 1;
 // const HEIGHT = 18;
-const WIDTH = 1;
 const HEIGHT = 18;
 
 export class SYMainScene extends Phaser.Scene {
@@ -85,6 +85,7 @@ export class SYMainScene extends Phaser.Scene {
 
     create() {
         const seed = getRandomInt(0, 1_000_000_000);
+        const fakeString = getFullText(getRandomInt(0, 5_000_000), HEIGHT * WIDTH - 1);
         this.fullString = getFullText(seed, HEIGHT * WIDTH);
         console.log(this.fullString);
 
@@ -98,18 +99,23 @@ export class SYMainScene extends Phaser.Scene {
             const percent = 1 - Math.min(1, Math.max(0, (height - fadeStartHeight) / (fadeEndHeight - fadeStartHeight)));
             logo.setAlpha(percent);
         });
-        textContainer.setText(this.fullString);
+        textContainer.emitter.onFor('interactionAllowed', this, ({allowed}) => {
+            this.allowInteraction = allowed;
+        });
+        textContainer.setText(fakeString);
+        textContainer.doLoss();
 
         this.input.keyboard.on('keydown', (event: { key: string; }) => {
             if (!this.allowInteraction) return;
             const char = event.key.toUpperCase();
-            if (this.validChar(char)) { 
+            if (this.validChar(char) || char === 'O') { 
                 if (this.matchesNext(char)) {
                     this.currString += char;
+                    textContainer.setText(this.currString);
                 } else {
                     this.currString = '';
+                    textContainer.doLoss();
                 }
-                textContainer.setText(this.currString);
             }
         });
     }
